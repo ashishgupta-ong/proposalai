@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ProposalAI — Drive Sync</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#f7f6f3;--surface:#fff;--surface2:#f0ede8;--border:#e2ddd8;--border2:#ccc8c2;
+  --text:#1a1815;--text2:#6b6560;--text3:#a09a94;
+  --accent:#2d5be3;--accent-bg:#eef2fd;--accent-border:#c5d0f5;
+  --success:#1a7a4a;--success-bg:#edfaf3;--danger:#c0392b;--danger-bg:#fef0ee;
+  --sb:#1a1815;--sb-text:#e8e4df;--sb-text2:#8a8580;--sb-border:#2e2b28;--sb-hover:#252220;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;font-size:14px}
+.sidebar{width:240px;min-height:100vh;background:var(--sb);display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:100}
+.sb-logo{padding:22px 20px 18px;border-bottom:1px solid var(--sb-border)}
+.sb-logo-text{font-size:16px;font-weight:600;color:#fff;letter-spacing:-.02em}
+.sb-logo-sub{font-size:11px;color:var(--sb-text2);margin-top:2px}
+.sb-nav{padding:14px 10px;flex:1}
+.nav-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--sb-text2);padding:0 10px;margin-bottom:5px;margin-top:14px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;color:var(--sb-text2);font-size:13px;transition:all .15s;border:none;background:transparent;font-family:'DM Sans',sans-serif;width:100%}
+.nav-item:hover{background:var(--sb-hover);color:var(--sb-text)}
+.nav-item.active{background:var(--accent);color:#fff}
+.nav-icon{font-size:14px;width:18px;text-align:center}
+.nav-badge{margin-left:auto;font-size:10px;background:rgba(255,255,255,.12);color:var(--sb-text);padding:1px 7px;border-radius:99px;font-family:'DM Mono',monospace}
+.nav-item.active .nav-badge{background:rgba(255,255,255,.2);color:#fff}
+.sb-footer{padding:14px 16px;border-top:1px solid var(--sb-border)}
+.sb-field-lbl{font-size:11px;color:var(--sb-text2);margin-bottom:4px}
+.sb-input{width:100%;padding:7px 10px;background:#252220;border:1px solid var(--sb-border);border-radius:6px;color:var(--sb-text);font-size:12px;font-family:'DM Mono',monospace;outline:none;margin-bottom:6px}
+.sb-input:focus{border-color:#555}
+.sb-btn{width:100%;padding:6px;background:transparent;border:1px solid var(--sb-border);border-radius:6px;color:var(--sb-text2);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;margin-bottom:5px;text-align:center}
+.sb-btn:hover{background:var(--sb-hover);color:var(--sb-text)}
+.sb-btn.synced{border-color:#2d7a50;color:#4ade80}
+.sb-btn.syncing{border-color:#555;color:#aaa}
+.sync-status{font-size:10px;color:var(--sb-text2);text-align:center;margin-top:2px}
+
+.main{margin-left:240px;flex:1;min-height:100vh}
+.page{display:none;padding:36px 40px;max-width:860px;width:100%}
+.page.active{display:block}
+.page-title{font-size:22px;font-weight:600;letter-spacing:-.03em;margin-bottom:4px}
+.page-sub{font-size:13px;color:var(--text2);margin-bottom:26px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px 24px;margin-bottom:16px}
+.card-title{font-size:13px;font-weight:500;margin-bottom:14px}
+label{font-size:12px;color:var(--text2);display:block;margin-bottom:5px}
+input[type=text],input[type=password],textarea,select{width:100%;padding:9px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px;font-family:'DM Sans',sans-serif;outline:none;transition:border .15s}
+input[type=text]:focus,input[type=password]:focus,textarea:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(45,91,227,.07)}
+textarea{resize:vertical;line-height:1.65}
+select{cursor:pointer}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.field{margin-bottom:14px}
+.btn{padding:9px 18px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;border:1px solid transparent}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-primary:hover{background:#2450cc}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed}
+.btn-secondary{background:var(--surface);color:var(--text);border-color:var(--border)}
+.btn-secondary:hover{background:var(--surface2)}
+.btn-danger{background:transparent;color:var(--danger);border-color:var(--border)}
+.btn-danger:hover{background:var(--danger-bg)}
+.btn-full{width:100%;padding:11px;font-size:14px}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btns{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.rate-row{display:flex;align-items:center;gap:12px}
+.rate-row input[type=range]{flex:1;padding:0;border:none;box-shadow:none;height:4px;cursor:pointer;accent-color:var(--accent)}
+.rate-row input[type=range]:focus{box-shadow:none;border:none}
+.rate-val{font-size:15px;font-weight:600;color:var(--accent);min-width:60px;font-family:'DM Mono',monospace}
+.rate-lbl{font-size:12px;color:var(--text3)}
+.dev-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin-bottom:16px}
+.dev-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px 16px;transition:border .15s}
+.dev-card:hover{border-color:var(--border2)}
+.dev-avatar{width:36px;height:36px;border-radius:50%;background:var(--accent-bg);border:1.5px solid var(--accent-border);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:var(--accent);margin-bottom:10px}
+.dev-name{font-size:14px;font-weight:600}
+.dev-role{font-size:12px;color:var(--text2);margin-top:1px}
+.dev-rate{display:inline-block;margin-top:8px;font-size:11px;font-weight:600;font-family:'DM Mono',monospace;color:var(--accent);background:var(--accent-bg);padding:2px 8px;border-radius:99px}
+.dev-skills{margin-top:8px;display:flex;flex-wrap:wrap;gap:4px}
+.dev-skill{font-size:11px;color:var(--text2);background:var(--surface2);border:1px solid var(--border);padding:1px 7px;border-radius:99px}
+.dev-actions{display:flex;gap:6px;margin-top:12px}
+.dev-edit,.dev-del{font-size:11px;padding:4px 10px;border-radius:6px;cursor:pointer;border:1px solid var(--border);background:transparent;font-family:'DM Sans',sans-serif}
+.dev-edit{color:var(--text2)}.dev-edit:hover{background:var(--surface2)}
+.dev-del{color:var(--danger)}.dev-del:hover{background:var(--danger-bg)}
+.gen-selector{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:16px}
+.suggest-box{background:var(--accent-bg);border:1px solid var(--accent-border);border-radius:10px;padding:14px 18px;margin-bottom:16px}
+.suggest-title{font-size:11px;color:var(--accent);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+.suggest-item{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--accent-border)}
+.suggest-item:last-child{border-bottom:none;padding-bottom:0}
+.suggest-use{font-size:11px;padding:4px 12px;border-radius:6px;cursor:pointer;background:var(--accent);color:#fff;border:none;font-family:'DM Sans',sans-serif;font-weight:500}
+.suggest-use:hover{background:#2450cc}
+.out-box{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;margin-top:20px}
+.out-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.out-meta{font-size:12px;color:var(--text2);line-height:1.6}
+.out-meta strong{color:var(--text)}
+.out-text{font-size:14px;line-height:1.85;white-space:pre-wrap}
+.alert{padding:10px 14px;border-radius:8px;font-size:13px;margin-top:10px}
+.alert-error{background:var(--danger-bg);color:var(--danger);border:1px solid #f5c6c2}
+.alert-info{background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-border)}
+.spinner{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:8px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty{text-align:center;padding:36px 20px;color:var(--text3);font-size:13px}
+.port-search{width:100%;padding:9px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:13px;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;margin-bottom:14px}
+.port-search:focus{border-color:var(--accent)}
+.port-list{max-height:440px;overflow-y:auto}
+.port-item{display:flex;align-items:flex-start;gap:12px;padding:11px 14px;border-bottom:1px solid var(--border);transition:background .1s}
+.port-item:first-child{border-top:1px solid var(--border)}
+.port-item:hover{background:var(--surface2)}
+.port-body{flex:1;min-width:0}
+.port-title{font-size:13px;font-weight:500}
+.port-desc{font-size:12px;color:var(--text2);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.port-tags{margin-top:5px;display:flex;flex-wrap:wrap;gap:4px}
+.tag{font-size:10px;color:var(--text2);background:var(--surface2);border:1px solid var(--border);padding:1px 6px;border-radius:99px}
+.port-del{background:transparent;border:none;color:var(--text3);cursor:pointer;font-size:16px;padding:2px 4px;line-height:1;border-radius:4px;flex-shrink:0}
+.port-del:hover{color:var(--danger);background:var(--danger-bg)}
+hr{border:none;border-top:1px solid var(--border);margin:18px 0}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--border2);border-radius:99px}
+@media(max-width:700px){.sidebar{width:200px}.main{margin-left:200px}.page{padding:22px 18px}.row2{grid-template-columns:1fr}.dev-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sb-logo">
+    <div class="sb-logo-text">ProposalAI</div>
+    <div class="sb-logo-sub">Synced to Google Drive</div>
+  </div>
+  <nav class="sb-nav">
+    <div class="nav-lbl">Workspace</div>
+    <button class="nav-item active" onclick="showPage('generate',this)">
+      <span class="nav-icon">✦</span> Generate
+    </button>
+    <div class="nav-lbl">Setup</div>
+    <button class="nav-item" onclick="showPage('developers',this)">
+      <span class="nav-icon">◈</span> Developers
+      <span class="nav-badge" id="dev-count">0</span>
+    </button>
+    <button class="nav-item" onclick="showPage('portfolio',this)">
+      <span class="nav-icon">◉</span> Portfolio
+      <span class="nav-badge" id="port-count">0</span>
+    </button>
+  </nav>
+  <div class="sb-footer">
+    <div class="sb-field-lbl">Anthropic API Key</div>
+    <input type="password" class="sb-input" id="api-key-input" placeholder="sk-ant-..." />
+    <button class="sb-btn" onclick="saveApiKey()">Save key</button>
+    <div style="margin-top:10px;">
+      <div class="sb-field-lbl">Google Drive Sync</div>
+      <button class="sb-btn" id="sync-btn" onclick="syncToDrive()">↑ Save to Drive</button>
+      <button class="sb-btn" id="load-btn" onclick="loadFromDrive()">↓ Load from Drive</button>
+      <div class="sync-status" id="sync-status">Not synced yet</div>
+    </div>
+  </div>
+</aside>
+
+<div class="main">
+
+  <!-- GENERATE -->
+  <div class="page active" id="page-generate">
+    <div class="page-title">Generate Proposal</div>
+    <div class="page-sub">Select a developer, set the rate, paste the job description.</div>
+
+    <div class="gen-selector">
+      <div style="margin-bottom:12px;">
+        <label>Applying as</label>
+        <select id="gen-dev-select" onchange="onDevSelect()" style="margin-top:4px;"></select>
+      </div>
+      <div id="gen-dev-skills" style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px;"></div>
+      <label>Rate for this proposal</label>
+      <div class="rate-row" style="margin-top:6px;">
+        <span class="rate-lbl">$15</span>
+        <input type="range" min="15" max="20" step="1" value="15" id="gen-rate"
+          oninput="document.getElementById('gen-rate-val').textContent='$'+this.value+'/hr'" />
+        <span class="rate-lbl">$20</span>
+        <span class="rate-val" id="gen-rate-val">$15/hr</span>
+      </div>
+    </div>
+
+    <div class="suggest-box" id="suggest-box" style="display:none;">
+      <div class="suggest-title">Suggested for this job</div>
+      <div id="suggest-list"></div>
+    </div>
+
+    <div class="field">
+      <label>Client job description</label>
+      <textarea id="jd-input" rows="8" oninput="onJdChange()" style="margin-top:4px;"
+        placeholder="Paste the full job description here...
+
+Example: 'We need a React developer to build a multi-vendor e-commerce platform with Stripe payments. React, Node.js, MongoDB. 2 months, $8,000 budget.'"></textarea>
+    </div>
+
+    <button class="btn btn-primary btn-full" id="gen-btn" onclick="generateProposal()">Generate Proposal</button>
+    <div id="gen-error" style="display:none;" class="alert alert-error"></div>
+
+    <div class="out-box" id="gen-output" style="display:none;">
+      <div class="out-header">
+        <div class="out-meta" id="gen-meta"></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-secondary btn-sm" onclick="copyProposal()">Copy</button>
+          <button class="btn btn-secondary btn-sm" onclick="generateProposal()">Regenerate</button>
+        </div>
+      </div>
+      <div class="out-text" id="gen-text"></div>
+    </div>
+  </div>
+
+  <!-- DEVELOPERS -->
+  <div class="page" id="page-developers">
+    <div class="page-title">Developers</div>
+    <div class="page-sub">Add each team member. Synced to your Google Drive automatically.</div>
+    <div class="dev-grid" id="dev-grid"></div>
+    <div class="card">
+      <div class="card-title" id="dev-form-title">Add Developer</div>
+      <input type="hidden" id="dev-edit-idx" value="-1">
+      <div class="row2">
+        <div class="field"><label>Full name</label><input type="text" id="df-name" placeholder="e.g. Amit Kumar"></div>
+        <div class="field"><label>Role</label><input type="text" id="df-role" placeholder="e.g. React Developer"></div>
+      </div>
+      <div class="field"><label>Key skills (comma separated)</label><input type="text" id="df-skills" placeholder="e.g. React, Redux, TypeScript, Node.js"></div>
+      <div class="field"><label>Bio (1–2 sentences)</label><textarea id="df-bio" rows="3" placeholder="e.g. 4 years building React apps for US and Australian clients."></textarea></div>
+      <div class="field">
+        <label>Default hourly rate</label>
+        <div class="rate-row" style="margin-top:6px;">
+          <span class="rate-lbl">$15</span>
+          <input type="range" min="15" max="20" step="1" value="15" id="df-rate"
+            oninput="document.getElementById('df-rate-val').textContent='$'+this.value+'/hr'" />
+          <span class="rate-lbl">$20</span>
+          <span class="rate-val" id="df-rate-val">$15/hr</span>
+        </div>
+      </div>
+      <div class="btns">
+        <button class="btn btn-primary" onclick="saveDev()">Save Developer</button>
+        <button class="btn btn-secondary" onclick="clearDevForm()">Clear</button>
+        <span id="dev-saved-msg" style="display:none;font-size:12px;color:var(--success);">Saved & syncing...</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- PORTFOLIO -->
+  <div class="page" id="page-portfolio">
+    <div class="page-title">Portfolio</div>
+    <div class="page-sub" id="port-sub">Projects matched automatically to each job description.</div>
+    <div class="card" style="padding:16px 20px;">
+      <div style="display:flex;gap:10px;align-items:center;margin-bottom:14px;flex-wrap:wrap;">
+        <input type="text" class="port-search" id="port-search" placeholder="Search by name, technology, industry..." oninput="renderPortfolio()" style="flex:1;margin:0;" />
+        <button class="btn btn-secondary btn-sm" onclick="exportCSV()">Export CSV</button>
+        <button class="btn btn-danger btn-sm" onclick="clearPortfolio()">Clear all</button>
+      </div>
+      <div class="port-list" id="port-list"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Add Project</div>
+      <div class="field"><label>Project title</label><input type="text" id="np-title" placeholder="e.g. Healthcare dashboard for US client"></div>
+      <div class="field"><label>Description</label><textarea id="np-desc" rows="3" placeholder="What you built and what results it achieved"></textarea></div>
+      <div class="field"><label>Tags / keywords (comma separated)</label><input type="text" id="np-tags" placeholder="e.g. React, healthcare, dashboard, AWS"></div>
+      <div class="btns">
+        <button class="btn btn-primary" onclick="addProject()">Add Project</button>
+        <span id="port-saved-msg" style="display:none;font-size:12px;color:var(--success);">Added!</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── CONFIG ──────────────────────────────────────────────────────────────────
+// IMPORTANT: Replace this with your own Google OAuth Client ID.
+// Steps:
+//   1. Go to https://console.cloud.google.com
+//   2. Create a project → Enable "Google Drive API"
+//   3. Go to "Credentials" → "Create Credentials" → "OAuth 2.0 Client ID"
+//   4. Application type: "Web application"
+//   5. Authorized JavaScript origins: add "null" (for local file) or your domain
+//   6. Copy the Client ID and paste it below
+const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID_HERE';
+const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.file';
+const DATA_FILENAME = 'proposalai-data.json';
+
+// ─── STATE ───────────────────────────────────────────────────────────────────
+let developers = [], portfolio = [];
+let driveFileId = null;
+let accessToken = null;
+let tokenExpiry = 0;
+
+const RAW = [
+  {t:"Tourist",d:"Travel discovery app for restaurants, attractions, shops. Tourism industry, German language.",k:["React Native","tourism","travel","maps","location"]},
+  {t:"Darkpool",d:"Real-time stock price app with graphical market data in daily, weekly, monthly, yearly patterns.",k:["React Native","finance","stocks","charts"]},
+  {t:"GoodFoodDiscounts",d:"Swiggy-type food ordering app with restaurant map tracking, order and cancel.",k:["React Native","food delivery","restaurant","maps","QR code","e-commerce"]},
+  {t:"Guo Media",d:"Social networking platform with live streaming, user profiles, posts, follower notifications.",k:["React Native","social networking","live streaming","video","push notifications"]},
+  {t:"MyBiz / Coast",d:"Smart team messaging app similar to Slack. Task assignment, group chat, privacy-first.",k:["React Native","GraphQL","Apollo","Redux","Twilio","messaging","task management"]},
+  {t:"Goloca Customer App",d:"Boat ticket booking for port-to-port travel. Online payments, QR code, promotions.",k:["React Native","tourism","travel","booking","maps","QR code","payments"]},
+  {t:"Goloca Service App",d:"Boat owner management app for scheduling, crew management, and payments.",k:["React Native","tourism","travel","booking","management"]},
+  {t:"Educative",d:"Interactive programming education platform with in-browser code editor and course builder.",k:["React","Material UI","Redux","Node.js","Express","PostgreSQL","AWS","code editor","e-learning","education"]},
+  {t:"SABGO",d:"Location sharing system with rating and reviews for restaurants, malls, shops, hotels.",k:["React","Redux","Google Maps","travel","location","reviews"]},
+  {t:"GreatGuides",d:"Adventure travel platform with Auth0, PayPal, adventure rating, personal messaging, GraphQL.",k:["React","Redux","TypeScript","MongoDB","Node.js","GraphQL","Google Maps","Auth0","PayPal","tourism","adventure"]},
+  {t:"Ebefresh",d:"Food waste marketplace connecting growers, suppliers, retailers. Weather map widget. Australia.",k:["React","Redux","Google Maps","Python","food marketplace","grocery","e-commerce","weather API","Australia"]},
+  {t:"Early Learning Management",d:"Childcare center data management with role-based access, budget tracking, analytics dashboards.",k:["React","Chart.js","Python","education","childcare","dashboard","management","Australia"]},
+  {t:"MazDigital / MAZ Systems",d:"No-code video streaming app builder for publishers. Netflix-style. Served Bloomberg, Hearst, Condé Nast.",k:["React","Redux","Video.js","Firebase","AWS","streaming","entertainment","TV app","media"]},
+  {t:"PrintSvc",d:"Product management system with invoice generation, role-based access, PDF generation, internal mail.",k:["React","Python","PDF","barcode","invoice","product management","corporate"]},
+  {t:"Incrementum",d:"Massage therapy education platform with course purchasing, e-books, quizzes, certificate printing.",k:["React","Redux","GraphQL","Auth0","PayPal","e-learning","education","certificates"]},
+  {t:"Unibuddy",d:"Peer-to-peer university platform connecting prospective with current students. 600+ institutions.",k:["React","Redux","TypeScript","AWS","GraphQL","Chart.js","education","university","subscription"]},
+  {t:"Atayata",d:"Job portal and company review platform similar to Glassdoor.",k:["React","Redux","Node.js","jobs","recruitment","reviews","HR"]},
+  {t:"MakeMyMeal",d:"Dubai food delivery platform for tiffin-style meal plans for individuals and offices.",k:["React","Redux","Node.js","MongoDB","Chart.js","food delivery","meal plans","Dubai","UAE"]},
+  {t:"LIM Lessons",d:"Global language learning with 80+ languages, virtual classroom, flashcards.",k:["React","Bootstrap","Node.js","MongoDB","AWS","WebRTC","Twilio","Firebase","education","language learning","LMS"]},
+  {t:"FieldFolio",d:"Australia's leading B2B wholesale marketplace connecting wholesalers with 40,000+ retailers.",k:["React","Node.js","Express","MongoDB","MYOB","Xero","AWS","e-commerce","wholesale","B2B","marketplace","Australia"]},
+  {t:"ViewerGames",d:"Live streaming mini-game platform via Twitch for Fortnite, PUBG stats.",k:["React","WebGL","Node.js","WebSockets","AWS","Firebase","Twitch API","Auth0","Chart.js","gaming","live streaming"]},
+  {t:"Mikyajy",d:"Progressive Web App (PWA) e-commerce for beauty and cosmetics in UAE.",k:["React","PWA","e-commerce","beauty","cosmetics","UAE"]},
+  {t:"Sellgo",d:"Amazon seller analytics with product tracker, profit finder, historical graphs. Highcharts.",k:["React","Redux","TypeScript","Semantic UI","Auth0","Highcharts","e-commerce","Amazon","analytics"]},
+  {t:"Leanspace",d:"Cloud-native satellite mission operations platform. Analytics with Cube.js and Recharts.",k:["React","TypeScript","Ant Design","React Query","Recharts","Cube.js","Highcharts","Java","Spring Boot","MySQL","Kubernetes","Docker","AWS","satellite","analytics"]},
+  {t:"WithJoy",d:"Comprehensive wedding planning platform with websites, guest lists, invitations, registry.",k:["React","Gatsby","Node.js","Express","AWS","OAuth","animations","wedding","lifestyle"]},
+  {t:"Headhuntr",d:"Candidate intelligence recruitment platform for effortless candidate sourcing.",k:["React","Redux","Bootstrap","recruitment","HR","talent"]},
+  {t:"Koo Web",d:"Twitter-like social networking with tweet, reply, like, retweet, media. Live with thousands of users.",k:["React","Material UI","MobX","Redux","social networking"]},
+  {t:"EMAlpha",d:"Financial analytics AI for emerging markets. ESG analytics, risk assessment across 50+ markets.",k:["React","FastAPI","Python","PostgreSQL","finance","stocks","ESG","analytics","AI"]},
+  {t:"CyberPublicity",d:"Google Ads tool with API builder, campaign management. Celery/RabbitMQ scheduling.",k:["Vue.js","Python","Django","Celery","RabbitMQ","Docker","MySQL","Google Ads API","advertising","marketing"]},
+  {t:"iShoppes",d:"Duty-free luxury retail platform for major airports like JFK and Boston Logan.",k:["React","Redux","GraphQL","Apollo","Strapi","CMS","e-commerce","duty-free","retail","airports"]},
+  {t:"Newline",d:"Developer education platform with courses, books, payments, subscriptions, community feedback.",k:["React","Redux","Next.js","GraphQL","PostgreSQL","Docker","Node.js","education","edtech","subscription","payments"]},
+  {t:"Clazar",d:"Cloud sales acceleration for AWS, Azure, Google Cloud marketplaces. CRM integrations, real-time analytics.",k:["React","Redux Toolkit","Auth0","CRM","analytics","SaaS","cloud","AWS","Azure","marketplace","enterprise"]},
+  {t:"Movelead",d:"Lead generation platform for moving, real estate, home services. Real-time housing data, subscriptions.",k:["Next.js","Chakra UI","PostgreSQL","Firebase","Google Maps","AWS","Vercel","subscription","lead generation","real estate"]},
+  {t:"FDNA",d:"AI health tech for detecting rare genetic disorders. Face2Gene analyzes facial features to diagnose 1000+ conditions.",k:["React","Redux Toolkit","TailwindCSS","TypeScript","Laravel","PostgreSQL","AWS","AI","ML","healthcare","genetics"]},
+  {t:"Pitchwave",d:"AI-powered automated user interview platform with transcription and Google APIs.",k:["Next.js","Material UI","Node.js","GraphQL","Express","Stripe","AWS","Cognito","AI","user research","SaaS"]},
+  {t:"Craftly AI",d:"AI content creation for blog posts, social media, emails, ads. 25+ languages, tone adjustment.",k:["React","Redux","Ant Design","AWS","AI","content generation","copywriting","SEO"]},
+  {t:"Pharmalink",d:"Platform connecting pharmacy owners with independent pharmacists. 600+ active users.",k:["React","Next.js","Redux","Material UI","MongoDB","AWS","healthcare","pharmacy","professional networking"]},
+  {t:"Dashify / Boardzy",d:"Customizable dashboard with drag-and-drop widgets: calendars, to-do lists, weather.",k:["Next.js","Auth0","Material UI","React-Rnd","Node.js","Vercel","dashboard","productivity","drag-and-drop"]},
+  {t:"UTXO SRC20",d:"Bitcoin SRC-20 token platform with OKX, Leather, Unisat wallet integrations and voting.",k:["Next.js","React","MUI","Bitcoin","blockchain","crypto","Web3","wallet integration"]},
+  {t:"MAKAO",d:"Prediction markets for sports, politics, personal events. Web3, auto-moderation.",k:["React","Redux Toolkit","TypeScript","Web3auth","Wagmi","TailwindCSS","Express","MongoDB","WebSockets","blockchain","Web3"]},
+  {t:"Cheers App",d:"Beverage ordering app from local restaurants with QR pickup, online payment, Algolia search.",k:["React","Next.js","Clerk Auth","Algolia","TypeScript","MUI","Vercel","e-commerce","food","beverages","QR code","payments"]},
+  {t:"Mirbotics IoT",d:"Real-time manufacturing dashboard with live production metrics, machine health, dynamic charts.",k:["React","Redux","Material UI","Apache ECharts","Ag-Grid","MongoDB","Node.js","IoT","dashboard","real-time","manufacturing"]},
+  {t:"Ekko Chatbot",d:"Chatbot with company policy Q&A, text-to-speech, speech-to-text, location-based content. English and Hebrew.",k:["React Native","Node.js","Azure","Redux","push notifications","chatbot","AI","multilingual"]},
+  {t:"Apporto",d:"Secure virtual desktop for education and business. No VPN, clientless, Windows/macOS/Linux. SaaS.",k:["React","MUI","Next.js","Nuxt.js","MongoDB","Node.js","Express","AWS","Kubernetes","Docker","SaaS","virtual desktop","subscription","LMS"]},
+  {t:"Crene",d:"AI-powered news platform with AI article/image/video creation and creator monetization.",k:["Next.js","RTK","TailwindCSS","Firebase","Python","MySQL","OpenAI","AI","news","content creation","monetization"]},
+  {t:"PathFinder AI",d:"AI platform for entrepreneurs to build actionable business plans with market validation reports.",k:["React","TailwindCSS","Node.js","Express","Supabase","OpenAI","AWS","AI","business planning","startup"]},
+  {t:"PollBolt",d:"AI-powered survey creation and analytics with intelligent question generation.",k:["React","Redux Toolkit","Node.js","Express","TypeScript","MongoDB","WebSockets","TailwindCSS","Stripe","OpenAI","AI","surveys","analytics","SaaS"]},
+  {t:"Pirkx Web",d:"Wellbeing benefits platform with rewards, fitness plans, healthcare services. SaaS with CI/CD.",k:["React","Next.js","Redux","PostgreSQL","GoCardless","AWS","CI/CD","SaaS","health","wellness","fitness","subscription"]},
+  {t:"Pirkx Mobile",d:"Mobile wellbeing app with rewards, fitness plans, healthcare and mental health resources.",k:["React Native","Redux","React Query","Firebase","TailwindCSS","health","wellness","fitness","mobile"]},
+  {t:"RS CAB",d:"Rideshare platform with real-time tracking, payment gateways, instant booking.",k:["React Native","TypeScript","Redux Toolkit","Express","MongoDB","Socket.js","rideshare","transportation","payments","real-time"]},
+  {t:"SalveHealth",d:"Healthcare platform with encrypted messaging, Zoom video calls, automated reminders. HIPAA & GDPR compliant.",k:["React","Node.js","GraphQL","React Native","Zoom","AWS","CI/CD","healthcare","telemedicine","HIPAA","GDPR","patient management"]},
+  {t:"Ehko AI",d:"Creator economy platform: AI-powered conversational clone of content creators for 24/7 audience interaction.",k:["React","Next.js","NestJS","MongoDB","Docker","AWS","Stripe","Python","OpenAI","AI","creator economy","conversational AI","monetization"]},
+  {t:"Snopt",d:"Football analytics platform with report creation, Stripe subscriptions and checkout.",k:["Stripe","analytics","sports","football","subscription","payments","reports"]}
+];
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+function init() {
+  const savedKey = localStorage.getItem('pg_apikey');
+  if (savedKey) document.getElementById('api-key-input').value = savedKey;
+  const savedToken = localStorage.getItem('pg_gtoken');
+  const savedExpiry = parseInt(localStorage.getItem('pg_gexpiry')||'0');
+  const savedFileId = localStorage.getItem('pg_gfileid');
+  if (savedToken && Date.now() < savedExpiry) {
+    accessToken = savedToken;
+    tokenExpiry = savedExpiry;
+    if (savedFileId) driveFileId = savedFileId;
+    setSyncStatus('Token active — click Load to sync', false);
+  }
+  // Load local fallback
+  const localDevs = localStorage.getItem('pg_devs');
+  if (localDevs) developers = JSON.parse(localDevs);
+  const localPort = localStorage.getItem('pg_port');
+  if (localPort) portfolio = JSON.parse(localPort);
+  else { portfolio = RAW.map(r=>({title:r.t,desc:r.d,tags:r.k})); saveLocal(); }
+  updateCounts(); populateDevSelect(); renderDevCards(); renderPortfolio();
+}
+
+function saveLocal() {
+  localStorage.setItem('pg_devs', JSON.stringify(developers));
+  localStorage.setItem('pg_port', JSON.stringify(portfolio));
+}
+
+function saveApiKey() {
+  const k = document.getElementById('api-key-input').value.trim();
+  if (k) localStorage.setItem('pg_apikey', k);
+  alert('API key saved!');
+}
+
+function updateCounts() {
+  document.getElementById('dev-count').textContent = developers.length;
+  document.getElementById('port-count').textContent = portfolio.length;
+  document.getElementById('port-sub').textContent = `${portfolio.length} projects — matched automatically to each job description.`;
+}
+
+// ─── GOOGLE DRIVE AUTH ────────────────────────────────────────────────────────
+function signInWithGoogle() {
+  return new Promise((resolve, reject) => {
+    if (GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID_HERE') {
+      reject(new Error('Please set your Google Client ID in the HTML file first. See instructions in the sidebar.'));
+      return;
+    }
+    if (accessToken && Date.now() < tokenExpiry) { resolve(accessToken); return; }
+    const params = new URLSearchParams({
+      client_id: GOOGLE_CLIENT_ID,
+      redirect_uri: window.location.href.split('?')[0].split('#')[0],
+      response_type: 'token',
+      scope: DRIVE_SCOPE,
+      prompt: 'consent'
+    });
+    const popup = window.open(`https://accounts.google.com/o/oauth2/v2/auth?${params}`, 'google-auth', 'width=500,height=600');
+    const timer = setInterval(() => {
+      try {
+        if (popup.closed) { clearInterval(timer); reject(new Error('Popup closed')); return; }
+        const hash = popup.location.hash;
+        if (hash && hash.includes('access_token')) {
+          clearInterval(timer);
+          popup.close();
+          const p = new URLSearchParams(hash.substring(1));
+          const token = p.get('access_token');
+          const expiresIn = parseInt(p.get('expires_in')||'3600');
+          accessToken = token;
+          tokenExpiry = Date.now() + expiresIn * 1000;
+          localStorage.setItem('pg_gtoken', token);
+          localStorage.setItem('pg_gexpiry', tokenExpiry.toString());
+          resolve(token);
+        }
+      } catch(e) { /* cross-origin, keep polling */ }
+    }, 500);
+  });
+}
+
+// ─── DRIVE SYNC ───────────────────────────────────────────────────────────────
+function setSyncStatus(msg, loading) {
+  const el = document.getElementById('sync-status');
+  el.textContent = msg;
+  el.style.color = loading ? '#888' : 'var(--sb-text2)';
+}
+
+async function syncToDrive() {
+  setSyncStatus('Connecting...', true);
+  try {
+    const token = await signInWithGoogle();
+    const data = JSON.stringify({ developers, portfolio, savedAt: new Date().toISOString() }, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    let res;
+    if (driveFileId) {
+      res = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`, {
+        method: 'PATCH', headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' }, body: blob
+      });
+    } else {
+      const meta = { name: DATA_FILENAME, mimeType: 'application/json' };
+      const form = new FormData();
+      form.append('metadata', new Blob([JSON.stringify(meta)], { type: 'application/json' }));
+      form.append('file', blob);
+      res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+        method: 'POST', headers: { 'Authorization': `Bearer ${token}` }, body: form
+      });
+      const created = await res.json();
+      driveFileId = created.id;
+      localStorage.setItem('pg_gfileid', driveFileId);
+    }
+    if (!res.ok) throw new Error('Upload failed: ' + res.status);
+    setSyncStatus('Saved to Drive ✓ ' + new Date().toLocaleTimeString(), false);
+  } catch(e) {
+    setSyncStatus('Error: ' + e.message, false);
+    alert('Sync error: ' + e.message);
+  }
+}
+
+async function loadFromDrive() {
+  setSyncStatus('Loading...', true);
+  try {
+    const token = await signInWithGoogle();
+    let fileId = driveFileId;
+    if (!fileId) {
+      const search = await fetch(
+        `https://www.googleapis.com/drive/v3/files?q=name='${DATA_FILENAME}' and trashed=false&fields=files(id,name,modifiedTime)&orderBy=modifiedTime desc`,
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+      const result = await search.json();
+      if (!result.files || !result.files.length) {
+        setSyncStatus('No saved data found on Drive', false);
+        alert('No ProposalAI data file found on your Google Drive. Save first to create one.');
+        return;
+      }
+      fileId = result.files[0].id;
+      driveFileId = fileId;
+      localStorage.setItem('pg_gfileid', fileId);
+    }
+    const dlRes = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!dlRes.ok) throw new Error('Download failed: ' + dlRes.status);
+    const data = await dlRes.json();
+    if (data.developers) { developers = data.developers; }
+    if (data.portfolio) { portfolio = data.portfolio; }
+    saveLocal();
+    updateCounts(); populateDevSelect(); renderDevCards(); renderPortfolio();
+    setSyncStatus('Loaded from Drive ✓ ' + new Date().toLocaleTimeString(), false);
+    alert(`Loaded successfully!\n• ${developers.length} developers\n• ${portfolio.length} projects`);
+  } catch(e) {
+    setSyncStatus('Error: ' + e.message, false);
+    alert('Load error: ' + e.message);
+  }
+}
+
+// Auto-sync after data changes
+async function autoSync() {
+  saveLocal();
+  if (accessToken && Date.now() < tokenExpiry) {
+    try { await syncToDrive(); } catch(e) { /* silent */ }
+  }
+}
+
+// ─── NAV ──────────────────────────────────────────────────────────────────────
+function showPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ─── DEVELOPERS ───────────────────────────────────────────────────────────────
+function renderDevCards() {
+  const g = document.getElementById('dev-grid');
+  if (!developers.length) { g.innerHTML='<div class="empty">No developers yet. Add below.</div>'; return; }
+  g.innerHTML = developers.map((d,i)=>`
+    <div class="dev-card">
+      <div class="dev-avatar">${initials(d.name)}</div>
+      <div class="dev-name">${esc(d.name)}</div>
+      <div class="dev-role">${esc(d.role)}</div>
+      <span class="dev-rate">$${d.rate}/hr</span>
+      <div class="dev-skills">${(d.skills||'').split(',').slice(0,4).map(s=>`<span class="dev-skill">${esc(s.trim())}</span>`).join('')}</div>
+      <div class="dev-actions">
+        <button class="dev-edit" onclick="editDev(${i})">Edit</button>
+        <button class="dev-del" onclick="deleteDev(${i})">Remove</button>
+      </div>
+    </div>`).join('');
+}
+
+function initials(n) { return (n||'?').split(' ').slice(0,2).map(w=>w[0]||'').join('').toUpperCase(); }
+
+function editDev(i) {
+  const d=developers[i];
+  document.getElementById('dev-edit-idx').value=i;
+  document.getElementById('dev-form-title').textContent='Edit Developer';
+  document.getElementById('df-name').value=d.name||'';
+  document.getElementById('df-role').value=d.role||'';
+  document.getElementById('df-skills').value=d.skills||'';
+  document.getElementById('df-bio').value=d.bio||'';
+  document.getElementById('df-rate').value=d.rate||15;
+  document.getElementById('df-rate-val').textContent='$'+(d.rate||15)+'/hr';
+}
+
+function clearDevForm() {
+  document.getElementById('dev-edit-idx').value=-1;
+  document.getElementById('dev-form-title').textContent='Add Developer';
+  ['df-name','df-role','df-skills','df-bio'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('df-rate').value=15;
+  document.getElementById('df-rate-val').textContent='$15/hr';
+}
+
+async function saveDev() {
+  const name=document.getElementById('df-name').value.trim();
+  if (!name) { alert('Please enter a name.'); return; }
+  const dev={name,role:document.getElementById('df-role').value.trim(),skills:document.getElementById('df-skills').value.trim(),bio:document.getElementById('df-bio').value.trim(),rate:parseInt(document.getElementById('df-rate').value)||15};
+  const idx=parseInt(document.getElementById('dev-edit-idx').value);
+  if (idx>=0) developers[idx]=dev; else developers.push(dev);
+  updateCounts(); renderDevCards(); clearDevForm(); populateDevSelect();
+  const m=document.getElementById('dev-saved-msg'); m.style.display='inline'; setTimeout(()=>m.style.display='none',2500);
+  await autoSync();
+}
+
+async function deleteDev(i) {
+  if (!confirm('Remove '+developers[i].name+'?')) return;
+  developers.splice(i,1); updateCounts(); renderDevCards(); populateDevSelect();
+  await autoSync();
+}
+
+// ─── GENERATE ─────────────────────────────────────────────────────────────────
+function populateDevSelect() {
+  const sel=document.getElementById('gen-dev-select');
+  sel.innerHTML=developers.length
+    ? developers.map((d,i)=>`<option value="${i}">${d.name} — ${d.role}</option>`).join('')
+    : '<option value="">— Add developers in the Developers tab —</option>';
+  if (developers.length) onDevSelect();
+}
+
+function onDevSelect() {
+  const idx=parseInt(document.getElementById('gen-dev-select').value);
+  const d=developers[idx]; if (!d) return;
+  document.getElementById('gen-rate').value=d.rate||15;
+  document.getElementById('gen-rate-val').textContent='$'+(d.rate||15)+'/hr';
+  document.getElementById('gen-dev-skills').innerHTML=(d.skills||'').split(',').map(s=>`<span class="dev-skill">${esc(s.trim())}</span>`).join('');
+  suggestDevs();
+}
+
+function onJdChange() { suggestDevs(); }
+
+function suggestDevs() {
+  const jd=(document.getElementById('jd-input').value||'').toLowerCase();
+  if (!jd.trim()||!developers.length) { document.getElementById('suggest-box').style.display='none'; return; }
+  const scored=developers.map((d,i)=>{
+    let s=0;
+    (d.skills||'').split(',').forEach(sk=>{if(jd.includes(sk.trim().toLowerCase()))s+=3;});
+    if(jd.includes((d.role||'').toLowerCase()))s+=5;
+    return {...d,i,s};
+  }).filter(d=>d.s>0).sort((a,b)=>b.s-a.s).slice(0,3);
+  if (!scored.length) { document.getElementById('suggest-box').style.display='none'; return; }
+  document.getElementById('suggest-list').innerHTML=scored.map(d=>`
+    <div class="suggest-item">
+      <div><div style="font-size:13px;font-weight:500">${esc(d.name)}</div><div style="font-size:11px;color:var(--text2)">${esc(d.role)}</div></div>
+      <button class="suggest-use" onclick="applyDev(${d.i})">Use →</button>
+    </div>`).join('');
+  document.getElementById('suggest-box').style.display='';
+}
+
+function applyDev(i) { document.getElementById('gen-dev-select').value=i; onDevSelect(); }
+
+function getRelevant(jd) {
+  const jdl=jd.toLowerCase();
+  const words=new Set(jdl.split(/\W+/).filter(w=>w.length>3));
+  return portfolio.map(p=>{
+    let s=0;
+    (p.tags||[]).forEach(t=>{if(jdl.includes(t.toLowerCase()))s+=4;});
+    (p.title||'').toLowerCase().split(/\W+/).forEach(w=>{if(w.length>3&&words.has(w))s+=2;});
+    (p.desc||'').toLowerCase().split(/\W+/).forEach(w=>{if(w.length>4&&words.has(w))s+=.5;});
+    return {...p,s};
+  }).filter(p=>p.s>0).sort((a,b)=>b.s-a.s).slice(0,4);
+}
+
+async function generateProposal() {
+  const jd=document.getElementById('jd-input').value.trim();
+  const devIdx=parseInt(document.getElementById('gen-dev-select').value);
+  const dev=developers[devIdx];
+  const rate=document.getElementById('gen-rate').value;
+  const apiKey=localStorage.getItem('pg_apikey')||'';
+  const btn=document.getElementById('gen-btn');
+  const errDiv=document.getElementById('gen-error');
+  const outDiv=document.getElementById('gen-output');
+  errDiv.style.display='none';
+  if (!apiKey){errDiv.textContent='Please add your Anthropic API key in the sidebar.';errDiv.style.display='block';return;}
+  if (!jd){errDiv.textContent='Please paste a job description.';errDiv.style.display='block';return;}
+  if (!dev){errDiv.textContent='Please add at least one developer first.';errDiv.style.display='block';return;}
+  btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Writing proposal...';
+  outDiv.style.display='none';
+  const relevant=getRelevant(jd);
+  const portSection=relevant.length
+    ?'Relevant past projects:\n'+relevant.map(p=>`- ${p.title}: ${p.desc||''}`).join('\n')
+    :`This team has delivered ${portfolio.length}+ projects across web, mobile, and SaaS.`;
+  const sys=`You are a professional proposal writer for a software development agency.
+
+DEVELOPER APPLYING:
+Name: ${dev.name}
+Role: ${dev.role}
+Hourly rate: $${rate}/hr
+Skills: ${dev.skills||''}
+Bio: ${dev.bio||''}
+
+${portSection}
+
+Write a first-person proposal from ${dev.name}'s perspective. Structure:
+1. Opening — show deep understanding of the client's need
+2. Why ${dev.name} is the right fit — specific skills matching the job
+3. Relevant past work — naturally reference matching portfolio projects
+4. Proposed approach — specific to their project
+5. Deliverables — clear list
+6. Timeline — realistic
+7. Investment — $${rate}/hr, suggest total estimate if scope is clear
+8. Next steps — confident, warm close
+
+Tone: professional, confident, personal. Use "I" not "we". 300–450 words.`;
+  try {
+    const res=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1024,system:sys,messages:[{role:'user',content:`Job description:\n\n${jd}\n\nWrite the proposal.`}]})
+    });
+    const data=await res.json();
+    if (!res.ok) throw new Error(data.error?.message||'API error '+res.status);
+    const text=data.content?.map(b=>b.text||'').join('')||'';
+    document.getElementById('gen-text').textContent=text;
+    const matchInfo=relevant.length?` · Matched: ${relevant.map(r=>r.title).join(', ')}` :'';
+    document.getElementById('gen-meta').innerHTML=`<strong>${dev.name}</strong> · $${rate}/hr${matchInfo}`;
+    outDiv.style.display='';
+  } catch(e) {
+    errDiv.textContent='Error: '+e.message; errDiv.style.display='block';
+  } finally { btn.disabled=false; btn.innerHTML='Generate Proposal'; }
+}
+
+function copyProposal() {
+  navigator.clipboard.writeText(document.getElementById('gen-text').textContent).then(()=>{
+    const b=document.querySelector('.out-header .btn-secondary');
+    b.textContent='Copied!'; setTimeout(()=>b.textContent='Copy',2000);
+  });
+}
+
+// ─── PORTFOLIO ────────────────────────────────────────────────────────────────
+function renderPortfolio() {
+  const q=(document.getElementById('port-search')?.value||'').toLowerCase();
+  const el=document.getElementById('port-list');
+  let items=q?portfolio.filter(p=>(p.title+' '+p.desc+' '+(p.tags||[]).join(' ')).toLowerCase().includes(q)):portfolio;
+  if (!items.length){el.innerHTML='<div class="empty">No matches.</div>';return;}
+  el.innerHTML=items.slice(0,100).map(item=>{
+    const ri=portfolio.indexOf(item);
+    return `<div class="port-item">
+      <div class="port-body">
+        <div class="port-title">${esc(item.title)}</div>
+        ${item.desc?`<div class="port-desc">${esc(item.desc)}</div>`:''}
+        ${item.tags?.length?`<div class="port-tags">${item.tags.slice(0,5).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}${item.tags.length>5?`<span class="tag">+${item.tags.length-5}</span>`:''}</div>`:''}
+      </div>
+      <button class="port-del" onclick="delPort(${ri})">×</button>
+    </div>`;
+  }).join('');
+  if(items.length>100)el.innerHTML+=`<div class="empty" style="padding:10px;">Showing 100 of ${items.length}. Search to filter.</div>`;
+}
+
+async function delPort(i){portfolio.splice(i,1);updateCounts();renderPortfolio();await autoSync();}
+
+async function clearPortfolio(){
+  if(!confirm('Delete all '+portfolio.length+' projects?'))return;
+  portfolio=[];updateCounts();renderPortfolio();await autoSync();
+}
+
+async function addProject(){
+  const title=document.getElementById('np-title').value.trim(); if(!title)return;
+  const desc=document.getElementById('np-desc').value.trim();
+  const tags=(document.getElementById('np-tags').value.trim()||'').split(',').map(t=>t.trim()).filter(Boolean);
+  portfolio.push({title,desc,tags}); updateCounts();
+  document.getElementById('np-title').value=''; document.getElementById('np-desc').value=''; document.getElementById('np-tags').value='';
+  renderPortfolio();
+  const m=document.getElementById('port-saved-msg'); m.style.display='inline'; setTimeout(()=>m.style.display='none',2000);
+  await autoSync();
+}
+
+function exportCSV(){
+  const rows=[['title','description','tags'],...portfolio.map(p=>[p.title,p.desc||'',(p.tags||[]).join(', ')])];
+  const csv=rows.map(r=>r.map(c=>'"'+String(c).replace(/"/g,'""')+'"').join(',')).join('\n');
+  const a=document.createElement('a'); a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv); a.download='portfolio.csv'; a.click();
+}
+
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+
+document.getElementById('jd-input').addEventListener('input',()=>{if(developers.length)suggestDevs();});
+
+init();
+</script>
+
+</body>
+</html>
