@@ -139,15 +139,11 @@ hr{border:none;border-top:1px solid var(--border);margin:18px 0}
     </button>
   </nav>
   <div class="sb-footer">
-    <div class="sb-field-lbl">Anthropic API Key</div>
-    <input type="password" class="sb-input" id="api-key-input" placeholder="sk-ant-..." />
-    <button class="sb-btn" onclick="saveApiKey()">Save key</button>
-    <div style="margin-top:10px;">
-      <div class="sb-field-lbl">Google Drive Sync</div>
-      <button class="sb-btn" id="sync-btn" onclick="syncToDrive()">↑ Save to Drive</button>
-      <button class="sb-btn" id="load-btn" onclick="loadFromDrive()">↓ Load from Drive</button>
-      <div class="sync-status" id="sync-status">Not synced yet</div>
-    </div>
+    <div id="api-status" style="font-size:11px;color:var(--sb-text2);padding:4px 0 10px;">● AI ready</div>
+    <div class="sb-field-lbl">Google Drive Sync</div>
+    <button class="sb-btn" id="sync-btn" onclick="syncToDrive()">↑ Save to Drive</button>
+    <button class="sb-btn" id="load-btn" onclick="loadFromDrive()">↓ Load from Drive</button>
+    <div class="sync-status" id="sync-status">Not synced yet</div>
   </div>
 </aside>
 
@@ -338,8 +334,7 @@ const RAW = [
 
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 function init() {
-  const savedKey = localStorage.getItem('pg_apikey');
-  if (savedKey) document.getElementById('api-key-input').value = savedKey;
+
   const savedToken = localStorage.getItem('pg_gtoken');
   const savedExpiry = parseInt(localStorage.getItem('pg_gexpiry')||'0');
   const savedFileId = localStorage.getItem('pg_gfileid');
@@ -363,11 +358,7 @@ function saveLocal() {
   localStorage.setItem('pg_port', JSON.stringify(portfolio));
 }
 
-function saveApiKey() {
-  const k = document.getElementById('api-key-input').value.trim();
-  if (k) localStorage.setItem('pg_apikey', k);
-  alert('API key saved!');
-}
+
 
 function updateCounts() {
   document.getElementById('dev-count').textContent = developers.length;
@@ -617,12 +608,10 @@ async function generateProposal() {
   const devIdx=parseInt(document.getElementById('gen-dev-select').value);
   const dev=developers[devIdx];
   const rate=document.getElementById('gen-rate').value;
-  const apiKey=localStorage.getItem('pg_apikey')||'';
   const btn=document.getElementById('gen-btn');
   const errDiv=document.getElementById('gen-error');
   const outDiv=document.getElementById('gen-output');
   errDiv.style.display='none';
-  if (!apiKey){errDiv.textContent='Please add your Anthropic API key in the sidebar.';errDiv.style.display='block';return;}
   if (!jd){errDiv.textContent='Please paste a job description.';errDiv.style.display='block';return;}
   if (!dev){errDiv.textContent='Please add at least one developer first.';errDiv.style.display='block';return;}
   btn.disabled=true; btn.innerHTML='<span class="spinner"></span>Writing proposal...';
@@ -631,7 +620,7 @@ async function generateProposal() {
   const portSection=relevant.length
     ?'Relevant past projects:\n'+relevant.map(p=>`- ${p.title}: ${p.desc||''}`).join('\n')
     :`This team has delivered ${portfolio.length}+ projects across web, mobile, and SaaS.`;
-  const sys=`You are a professional proposal writer for a software development agency.
+  const system=`You are a professional proposal writer for a software development agency.
 
 DEVELOPER APPLYING:
 Name: ${dev.name}
@@ -654,15 +643,15 @@ Write a first-person proposal from ${dev.name}'s perspective. Structure:
 
 Tone: professional, confident, personal. Use "I" not "we". 300–450 words.`;
   try {
-    const res=await fetch('https://api.anthropic.com/v1/messages',{
+    // API key is stored securely on the server — never exposed to the browser
+    const res=await fetch('/api/propose',{
       method:'POST',
-      headers:{'Content-Type':'application/json','x-api-key':apiKey,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1024,system:sys,messages:[{role:'user',content:`Job description:\n\n${jd}\n\nWrite the proposal.`}]})
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({system, userMessage:`Job description:\n\n${jd}\n\nWrite the proposal.`})
     });
     const data=await res.json();
-    if (!res.ok) throw new Error(data.error?.message||'API error '+res.status);
-    const text=data.content?.map(b=>b.text||'').join('')||'';
-    document.getElementById('gen-text').textContent=text;
+    if (!res.ok) throw new Error(data.error||'Server error');
+    document.getElementById('gen-text').textContent=data.text;
     const matchInfo=relevant.length?` · Matched: ${relevant.map(r=>r.title).join(', ')}` :'';
     document.getElementById('gen-meta').innerHTML=`<strong>${dev.name}</strong> · $${rate}/hr${matchInfo}`;
     outDiv.style.display='';
