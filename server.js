@@ -98,6 +98,26 @@ app.delete('/api/portfolio/:id', async (req, res) => {
   catch (e) { res.status(500).json({ error: e.message }); }
 });
 
+
+// ─── SAMPLES API ──────────────────────────────────────────────────────────────
+app.get('/api/samples', async (req, res) => {
+  try { res.json(await db('samples').getAll()); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.post('/api/samples', async (req, res) => {
+  try {
+    const { title, type, content } = req.body;
+    const data = await db('samples').insert({ title, type, content });
+    res.json(data[0]);
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
+
+app.delete('/api/samples/:id', async (req, res) => {
+  try { await db('samples').del(req.params.id); res.json({ success: true }); }
+  catch (e) { res.status(500).json({ error: e.message }); }
+});
+
 // ─── PROPOSAL GENERATION — Groq (free) ───────────────────────────────────────
 app.post('/api/propose', async (req, res) => {
   const apiKey = process.env.GROQ_API_KEY;
