@@ -129,6 +129,23 @@ app.post('/api/propose', async (req, res) => {
   }
 });
 
+
+// ─── Debug route — remove after fixing ───────────────────────────────────────
+app.get('/debug-db', async (req, res) => {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_ANON_KEY;
+  if (!url || !key) return res.json({ error: 'Missing SUPABASE_URL or SUPABASE_ANON_KEY', url: !!url, key: !!key });
+  try {
+    const r = await fetch(`${url}/rest/v1/developers?limit=1`, {
+      headers: { 'apikey': key, 'Authorization': `Bearer ${key}` }
+    });
+    const data = await r.json();
+    res.json({ status: r.status, ok: r.ok, data, url: url.substring(0,30)+'...' });
+  } catch(e) {
+    res.json({ error: e.message });
+  }
+});
+
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
