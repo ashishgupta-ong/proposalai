@@ -79,8 +79,8 @@ app.get('/api/portfolio', async (req, res) => {
 
 app.post('/api/portfolio', async (req, res) => {
   try {
-    const { title, desc, tags } = req.body;
-    const data = await db('portfolio').insert({ title, desc, tags });
+    const { title, desc, description, tags } = req.body;
+    const data = await db('portfolio').insert({ title, description: description||desc, tags });
     res.json(data[0]);
   } catch (e) { res.status(500).json({ error: e.message }); }
 });

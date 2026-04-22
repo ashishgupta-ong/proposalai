@@ -353,7 +353,7 @@ async function init() {
 
     // If portfolio is empty, seed with default projects
     if (portfolio.length === 0) {
-      const projects = RAW.map(r => ({ title: r.t, desc: r.d, tags: r.k }));
+      const projects = RAW.map(r => ({ title: r.t, description: r.d, tags: r.k }));
       await api('POST', '/api/portfolio/bulk', { projects });
       portfolio = await api('GET', '/api/portfolio');
     }
@@ -617,7 +617,7 @@ function getRelevant(jd) {
     let s=0;
     (p.tags||[]).forEach(t=>{if(jdl.includes(t.toLowerCase()))s+=4;});
     (p.title||'').toLowerCase().split(/\W+/).forEach(w=>{if(w.length>3&&words.has(w))s+=2;});
-    (p.desc||'').toLowerCase().split(/\W+/).forEach(w=>{if(w.length>4&&words.has(w))s+=.5;});
+    (p.desc||p.description||'').toLowerCase().split(/\W+/).forEach(w=>{if(w.length>4&&words.has(w))s+=.5;});
     return {...p,s};
   }).filter(p=>p.s>0).sort((a,b)=>b.s-a.s).slice(0,4);
 }
@@ -697,7 +697,7 @@ function renderPortfolio() {
     return `<div class="port-item">
       <div class="port-body">
         <div class="port-title">${esc(item.title)}</div>
-        ${item.desc?`<div class="port-desc">${esc(item.desc)}</div>`:''}
+        ${(item.desc||item.description)?`<div class="port-desc">${esc(item.desc||item.description)}</div>`:''}
         ${item.tags?.length?`<div class="port-tags">${item.tags.slice(0,5).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}${item.tags.length>5?`<span class="tag">+${item.tags.length-5}</span>`:''}</div>`:''}
       </div>
       <button class="port-del" onclick="delPort(${ri})">×</button>
@@ -726,7 +726,7 @@ async function addProject(){
   const desc=document.getElementById('np-desc').value.trim();
   const tags=(document.getElementById('np-tags').value.trim()||'').split(',').map(t=>t.trim()).filter(Boolean);
   try {
-    const created = await api('POST', '/api/portfolio', {title, desc, tags});
+    const created = await api('POST', '/api/portfolio', {title, description: desc, tags});
     portfolio.push(created); updateCounts();
     document.getElementById('np-title').value=''; document.getElementById('np-desc').value=''; document.getElementById('np-tags').value='';
     renderPortfolio();
